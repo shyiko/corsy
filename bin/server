@@ -1,0 +1,28 @@
+#!/usr/bin/env node
+var http = require('http'),
+    https = require('https'),
+    url = require('url');
+http.createServer(function(req, res) {
+    var targetURL = url.parse(req.url, true).query.get;
+    if (targetURL === undefined) {
+        res.writeHead(400);
+        res.end();
+    } else {
+        var options = url.parse(targetURL), // https.request accepts string starting from release 0.8.9
+            client = options.protocol === 'https:' ? https : http;
+        client.request(options, function(fetchResponse) {
+            var headers = fetchResponse.headers;
+            headers['Access-Control-Allow-Origin'] = '*';
+            headers['Access-Control-Allow-Headers'] = 'X-Requested-With';
+            res.writeHead(fetchResponse.statusCode, headers);
+            fetchResponse.on('data', function(chunk) {
+                res.write(chunk);
+            }).on('end', function() {
+                    res.end();
+                });
+        }).on('error', function() {
+                res.writeHead(500);
+                res.end();
+            }).end();
+    }
+}).listen(8080);
